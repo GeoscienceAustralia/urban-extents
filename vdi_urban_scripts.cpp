@@ -20,6 +20,7 @@ int writescript_urban(string exedirc, string ofname, string tgtdirc, string lat_
     fout<<"#!/bin/bash"<<endl;
     fout<<"module use /g/data/v10/public/modules/modulefiles"<<endl;
     fout<<"module load agdc-py3-prod"<<endl;
+    fout<<"export OMP_NUM_THREADS=8"<<endl;
 
 
     for(i=bb_year;i<=ee_year;i++)
@@ -62,6 +63,7 @@ int writescript_tsmask(string exedirc, string ofname, string tgtdirc, string beg
     fout.open(ofname.c_str(), ios::out);
     fout<<"#!/bin/bash"<<endl;
     fout<<"module load gsl"<<endl;
+    fout<<"export OMP_NUM_THREADS=8"<<endl;
     fout<<exedirc<<"/tsmask_multiyears ";
     fout<<tgtdirc<<" ";
     fout<<beg_year<<" ";
@@ -219,6 +221,7 @@ int writescript_detection(string exedirc, string ofname, string dirc, string sub
     fout.open(ofname.c_str(), ios::out);
     fout<<"#!/bin/bash"<<endl;
     fout<<"module load gsl"<<endl;
+    fout<<"export OMP_NUM_THREADS=8"<<endl;
     fout<<exedirc<<"/suburbchange ";
     fout<<dirc<<" ";
     fout<<subdirc<<" ";
