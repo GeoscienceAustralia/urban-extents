@@ -9,7 +9,7 @@ import os
 import rasterio
 
 # Import dea-notebooks functions using relative link to Scripts directory
-sys.path.append('/g/data1/u46/pjt554/dea_notebooks/dea-notebooks-master/10_Scripts')
+# sys.path.append('/g/data1/u46/pjt554/dea_notebooks/dea-notebooks-master/10_Scripts')
 import DEADataHandling
 
 def write_multi_time_dataarray(filename, dataarray, **profile_override):

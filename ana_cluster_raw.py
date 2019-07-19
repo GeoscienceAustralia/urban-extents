@@ -1,7 +1,6 @@
 
-# coding: utf-8
-
-# In[98]:
+# This program reads 3 Landsat surface reflectance-derived data, applies k-mean clustering algorithm to generate M clusters, which will be combined to form
+# urban and non-urban classes in the next step in the work flow
 
 
 import os
@@ -13,86 +12,35 @@ from sklearn import preprocessing
 from sklearn.cluster import KMeans
 
 
-# In[99]:
 
-
-
+# directory where the input indices data can be found
 path=sys.argv[1]
+
+# directory where the header file for the clusters image can be found
 sourcehdr=sys.argv[2]
+
+# the number of clusters to generate 
 numcls=int(sys.argv[3])
 
-#numyears=int(sys.argv[3])
-#styear=int(sys.argv[4])
 
-
-# In[100]:
-
-
-#path='/g/data1/u46/pjt554/urban_change_full_sites/act_canberra/2000'
-
-
+# file name of the Tasseled cap brightness data
 bridatafile=path+'/phg_bri.img'
+
+# file name of the modified soil adjusted vegetation index data
 msavidatafile=path+'/phg_msavi.img'
+
+
+# file name of the modified normalised difference waterindex data
 mndwidatafile=path+'/phg_mndwi.img'
 
+# file name of a csv file which stores the spatial dimensions (number of rows, number of columns) of the data  
 parafile=path+'/ts_irow_icol.csv'
 
 filelist=[bridatafile, msavidatafile, mndwidatafile]
 
 
-# In[101]:
 
 
-def chessbcors(rowdiv, coldiv, nrow, ncol, rlen, clen):
-    
-    
-    rbnum = rowdiv-rlen+1
-    cbnum = coldiv-clen+1
-    
-    
-    blknum=rbnum*cbnum
-    
-    
-    
-    blkcors=np.zeros([blknum, 4])
-    blkcors=blkcors.astype(np.int32)
-
-    
-    
-    rowss=nrow/rowdiv
-    colss=ncol/coldiv
-    rowss=int(rowss)+1
-    colss=int(colss)+1
-    
-    rowpoints=np.zeros(rowdiv+1)
-    colpoints=np.zeros(coldiv+1)
-    
-    rowpoints=rowpoints.astype(np.int32)
-    colpoints=colpoints.astype(np.int32)
-    
-    for i in range(rowdiv+1):
-        rowpoints[i]=i*rowss
-        if (rowpoints[i]>nrow):
-            rowpoints[i]=nrow
-            
-    for i in range(coldiv+1):
-        colpoints[i]=i*colss
-        if (colpoints[i]>ncol):
-            colpoints[i]=ncol 
-    
-    cc=0
-    for i in range(rbnum):
-        for j in range(cbnum):
-                blkcors[cc, 0]=rowpoints[i]
-                blkcors[cc, 1]=rowpoints[i+rlen]
-                blkcors[cc, 2]=colpoints[j]
-                blkcors[cc, 3]=colpoints[j+clen]
-                cc=cc+1
-    
-    return blkcors, blknum
-
-
-# In[102]:
 
 
 tmm = pd.read_csv(parafile, header =None)
@@ -111,26 +59,17 @@ rlen=8
 clen=8
 
 
-blkcors, numblk = chessbcors(rowdiv, coldiv, nrow, ncol, rlen, clen)
 
-#print(blkcors)
-
-
-# In[103]:
-
+# a function to read indices data file, extract the relevant band in the file
+# put the data in the columns of an array as inputs for the clustering algorithm 
 
 def readimgfile(filename, pnum, tgt, data, col):
-    #print(filename)
     imgdata=np.fromfile(filename, dtype=np.float32)
-    #print(imgdata, imgdata.shape, tgt*pnum)
     oneblock=imgdata[tgt*pnum:(tgt+1)*pnum]
-    #print(oneblock)
-    #print(oneblock.shape)
     data[:, col]=imgdata[tgt*pnum:(tgt+1)*pnum]
     
 
 
-# In[104]:
 
 
 tgt=4
@@ -140,40 +79,6 @@ for filename in filelist:
     col=col+1
 
 
-# In[105]:
-
-
-def getoneblock(data, cors, ncol):
-    x1=cors[0]
-    x2=cors[1]
-    y1=cors[2]
-    y2=cors[3]
-    brow=x2-x1
-    bcol=y2-y1
-    oneblock = np.zeros([brow*bcol, 5])
-    for x in range(x1, x2):
-        for y in range(y1, y2):
-            mx=x-x1
-            my=y-y1
-            oneblock[mx*bcol+my, :]= data[x*ncol+y, :]
-            
-    return oneblock, brow, bcol
-
-
-# In[106]:
-
-
-def addspatialcols(data, pnum, nrow, ncol):
-    for i in range(pnum):
-        x=int(i/ncol)
-        y=i%ncol
-        data[i, 3]=x
-        data[i, 4]=y
-
-    return data
-
-
-# In[107]:
 
 
 def classifyoneblock_spectral(data, nrow, ncol, rp, numcls):
@@ -184,34 +89,21 @@ def classifyoneblock_spectral(data, nrow, ncol, rp, numcls):
     brightness = data[:, 0]
     wetness = data[:, 2]
    
+
+    #exclude water pixels from input data
+
     wateridx=np.where(wetness>=0.02)[0]
     nonwateridx=np.where(wetness<0.02)[0]
     stidx = np.argsort(greenness)
     
     
-    gresum=0
-    bff=0
-
-    
-    
-    
-    for i in range(int(.85*pnum), pnum):
-        gresum=gresum+greenness[stidx[i]]
-        bff=bff+1
-    gresum=gresum/bff
-
-    grebot=0
-    bff=0
-    for i in range(int(.15*pnum)):
-        grebot=grebot+greenness[stidx[i]]
-        bff=bff+1
-    grebot=grebot/bff
-    
+    #load non-water pixels data as input for clustering algorithm
     sprst=data
     sprst=sprst[nonwateridx]
     sprst=np.asarray(sprst)
 
 
+    # re-scale the data 
     sprst_scale=preprocessing.scale(sprst)
     
     width=2
@@ -220,7 +112,7 @@ def classifyoneblock_spectral(data, nrow, ncol, rp, numcls):
     clscount=np.zeros([pnum, numcls], dtype=np.int32)
 
     for i in range(rp):
-        clsimg = clusterclassifier(sprst_scale, gresum, pnum, numcls, wateridx, nonwateridx, brightness, greenness, wetness)
+        clsimg = clusterclassifier(sprst_scale, pnum, numcls, wateridx, nonwateridx, brightness, greenness, wetness)
         for k in range(pnum):
             m=clsimg[k]
             clscount[k, m]=clscount[k,m]+1
@@ -231,82 +123,15 @@ def classifyoneblock_spectral(data, nrow, ncol, rp, numcls):
     bbclsimg=clscount.argmax(axis=1)
     bbclsimg=bbclsimg.astype(np.int8)
 
-    #clsimg=bbclsimg
-    
-    #spfilter(clsimg, 1, 7, nrow, ncol)    
-    #grate=greenrate(clsimg, width, nrow, ncol)
-
-    #grthd=0.7
-
-    #for i in range(pnum):
-    #    ilab=clsimg[i]
-    #    if (ilab>=2):
-    #        clsimg[i]=ilab+1
-    #    else:
-    #        if (ilab==1):
-    #            if (grate[i]<grthd):
-    #                clsimg[i]=2
-
-
+ 
     return bbclsimg
 
 
 
 
-# In[108]:
 
 
-def spatialfilter(clsimg, x, y, width, thd, nrow, ncol):
-    
-    x1=x-width
-    x2=x+width+1
-    if (x1<0):
-        x1=0
-        x2=x1+width*2+1
-    if (x2>nrow):
-        x2=nrow
-        x1=nrow-width*2-1
-    
-    
-    y1=y-width
-    y2=y+width+1
-    if (y1<0):
-        y1=0
-        y2=y1+width*2+1
-    if (y2>ncol):
-        y2=ncol
-        y1=ncol-width*2-1
-        
-    cc=0
-    pp=0
-    ccp=np.zeros(4, dtype=np.int32)
-    
-    for row in range(x1, x2):
-        for col in range(y1, y2):
-            idx=row*ncol+col
-            ilab=clsimg[idx]
-            ccp[ilab]=ccp[ilab]+1
-            if ((row==x) & (col==y)):
-                ccp[ilab]=ccp[ilab]-1
-                oldlab=ilab
-                
-            
-    mid=ccp.argmax()        
-    mcc=ccp[mid]
-    
-    if (mcc>=thd):
-        return mid
-    else:
-        return oldlab
-    
-    
-        
-
-
-# In[109]:
-
-
-def clusterclassifier(scaled_data, gresum, pnum, numcls, wateridx, nonwateridx, brightness, greenness, wetness):
+def clusterclassifier(scaled_data, pnum, numcls, wateridx, nonwateridx, brightness, greenness, wetness):
     
     clsimg = np.zeros(pnum, dtype=np.int8)
     clsimg[wateridx]=-1
@@ -320,7 +145,7 @@ def clusterclassifier(scaled_data, gresum, pnum, numcls, wateridx, nonwateridx, 
     greencc=np.zeros(numcls)
     brightcc=np.zeros(numcls)
     wetcc=np.zeros(numcls)
-    #print(clsimg.shape[0], greenness.shape[0])
+
     for i in range(pnum):
         clab=clsimg[i]
         greencc[clab]=greencc[clab]+greenness[i]
@@ -351,179 +176,20 @@ def clusterclassifier(scaled_data, gresum, pnum, numcls, wateridx, nonwateridx, 
 
 
 
-# In[110]:
 
 
-def greenrate(clsimg, width, nrow, ncol):
-    
-    grate=np.zeros(pnum, dtype=np.float32)
-    
-    for x in range(nrow):
-        for y in range(ncol):
-            idx=x*ncol+y
-            if (clsimg[idx]==1):
-                grate[idx]=nbrate(clsimg, x, y, width, nrow, ncol)  
 
-    return grate
-
-
-# In[111]:
-
-
-def spfilter(clsimg, width, thd, nrow, ncol):
-    
-    for x in range(nrow):
-        for y in range(ncol):
-            idx=x*ncol+y
-            if (clsimg[idx]!=1):
-                clsimg[idx]=spatialfilter(clsimg, x, y, width, thd, nrow, ncol)  
- 
-   
-
-
-# In[112]:
-
-
-def nbrate(clsimg, x, y, width, nrow, ncol):
-    
-    x1=x-width
-    x2=x+width+1
-    if (x1<0):
-        x1=0
-        x2=x1+width*2+1
-    if (x2>nrow):
-        x2=nrow
-        x1=nrow-width*2-1
-    
-    
-    y1=y-width
-    y2=y+width+1
-    if (y1<0):
-        y1=0
-        y2=y1+width*2+1
-    if (y2>ncol):
-        y2=ncol
-        y1=ncol-width*2-1
-        
-    cc=0
-    pp=0
-    for row in range(x1, x2):
-        for col in range(y1, y2):
-            idx=row*ncol+col
-            if (clsimg[idx]==1):
-                pp=pp+1
-            
-            cc=cc+1
-    
-    rr=float(pp)/float(cc)
-    #print(pp, cc, rr)
-    return rr
-    
-
-
-# In[113]:
-
-
-def copyoneblockdata(oneblockclsimg, clsimg, cors, ncol):
-    x1=cors[0]
-    x2=cors[1]
-    y1=cors[2]
-    y2=cors[3]
-    brow=x2-x1
-    bcol=y2-y1
-    for x in range(x1, x2):
-        mx=x-x1
-        for y in range(y1, y2):
-            my=y-y1
-            clsimg[x*ncol+y] = oneblockclsimg[mx*bcol+my]
-            
-    
-
-
-# In[114]:
-
-
-def getrndcors(nrow, ncol, rowss, colss):
-    cors=np.zeros(4)
-    cors=cors.astype(np.int32)
-    for i in range(100):
-        x1=np.random.randint(nrow-rowss)
-        y1=np.random.randint(ncol-colss)
-        x2=x1+rowss
-        y2=y1+colss
-        
-        if ((x2<=nrow) & (y2<=ncol)):
-            break
-        
-    cors=[x1, x2, y1, y2]
-    return cors    
-
-
-# In[115]:
-
-
-def oneblockvotes(oneblockclsimg, votes, mpcors, ncol):
-    x1=mpcors[0]
-    x2=mpcors[1]
-    y1=mpcors[2]
-    y2=mpcors[3]
-    brow=x2-x1
-    bcol=y2-y1
-    for x in range(x1, x2):
-        mx=x-x1
-        for y in range(y1, y2):
-            my=y-y1
-            ilab = oneblockclsimg[mx*bcol+my]
-            votes[x*ncol+y, ilab] = votes[x*ncol+y, ilab] + 1
-            #print(votes[x*ncol+y, :])
-    
-    return votes
-
-
-# In[116]:
-
-
-def reassignlabels(clsimg, pnum, cutp):
-    for i in range(pnum):
-        clab=clsimg[i]
-        if (clab>0):
-            if (clab<cutp):
-                clab=1
-            else:
-                clab=3
-        clsimg[i]=clab
-        
-    #spfilter(clsimg, 1, 7, nrow, ncol)    
-    
-    width=2
-    grate=greenrate(clsimg, width, nrow, ncol)
-
-    grthd=0.7
-
-    for i in range(pnum):
-        ilab=clsimg[i]
-        if (ilab==1):
-            if (grate[i]<grthd):
-                clsimg[i]=2        
-    
-    return clsimg        
-
-
-# In[117]:
 
 
 rp=5
-#numcls=7
 
 clsimg=classifyoneblock_spectral(data, nrow, ncol, rp, numcls)
 clsimg=clsimg.astype(np.int8)
 
 
-# In[118]:
-
-
 
 sprst=preprocessing.scale(data[:, 0:3])
+
 cores=np.zeros([numcls,3])
 dist=np.zeros([numcls,2])
 
