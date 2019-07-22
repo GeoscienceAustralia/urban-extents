@@ -19,7 +19,7 @@ int writescript_urban(string exedirc, string ofname, string tgtdirc, string lat_
     fout.open(ofname.c_str(), ios::out);
     fout<<"#!/bin/bash"<<endl;
     fout<<"module use /g/data/v10/public/modules/modulefiles"<<endl;
-    fout<<"module load agdc-py3-prod"<<endl;
+    fout<<"module load dea"<<endl;
     fout<<"export OMP_NUM_THREADS=8"<<endl;
 
 
@@ -128,7 +128,7 @@ int writescript_clusters(string exedirc, string ofname, string tgtdirc, string b
     fout<<"#!/bin/bash"<<endl;
     fout<<"export OMP_NUM_THREADS=8"<<endl;
     fout<<"module use /g/data/v10/public/modules/modulefiles"<<endl;
-    fout<<"module load agdc-py3-prod"<<endl;
+    fout<<"module load dea"<<endl;
 
     for(i=bb_year;i<=ee_year;i++)
     {
