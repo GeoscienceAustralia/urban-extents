@@ -279,7 +279,30 @@ int writescript_run_all(string ofname, string dirc, string subdirc)
     return 0;
 }
 
+// This program takes user's inputs to generate a series bash scripts. Each script will perform one task in the whole work flow. 
+// A wrapper script which consists of all scripts in order can be run to complete the work flow.
+// Or the user can re-run the process from any individual script 
+// Below are the list of the command line parameters for the program.
 
+// 
+//    exedirc:  the directory where the programs locate, i.e., where the downloaded source codes are saved, it should be in form of full directory, e.g., /path_to/../../code_dir
+//    dirc: the directory where the data will be saved, it should be in form of full directory, e.g., /path_to/../../data_dir
+//    subdirc: the name of the sub directory where the data and scripts will be saved, for example, the name of the location
+//    lat_top: the latitude of the top left corner of the targeted area
+//    lat_bottom: the latitude of the right bottom corner of the targeted area
+//    lon_left: the longitude of the top left corner of the targeted area
+//    lon_right: the longitude of the right bottom corner of the targeted area
+//    beg_year: the year of the start date of the time series 
+//    end_year: the year of the end date of the time series
+//    numcls: number of classes for the k-mean clustering algorithm, normally should be set to 6 
+
+//
+//
+//
+//
+//
+//
+//
 
 
 int main(int argv, char** argc)
