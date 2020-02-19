@@ -3,12 +3,12 @@
 
 import numpy as np
 from numpy import genfromtxt
-from spectral import *
+from spectral import envi
 import matplotlib.pyplot as plt
 
 
 def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
-    if (app == 1):
+    if app == 1:
         tgtband = 'NDBI'
         # thd=-0.15
         ftidx = bandnames.index(tgtband)
@@ -16,11 +16,11 @@ def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
         for i in np.arange(pnum):
             cc = clsarr[i]
             val = ftvals[i]
-            if (cc == 1 and val > thd):
+            if cc == 1 and val > thd:
                 clsarr[i] = 3
-            elif (cc == 3 and val < thd):
+            elif cc == 3 and val < thd:
                 clsarr[i] = 1
-    elif (app == 2):
+    elif app == 2:
         tgtband = 'BUI'
         # thd=-0.60
         ftidx = bandnames.index(tgtband)
@@ -28,11 +28,11 @@ def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
         for i in np.arange(pnum):
             cc = clsarr[i]
             val = ftvals[i]
-            if (cc == 1 and val > thd):
+            if cc == 1 and val > thd:
                 clsarr[i] = 3
-            elif (cc == 3 and val < thd):
+            elif cc == 3 and val < thd:
                 clsarr[i] = 1
-    elif (app == 3):
+    elif app == 3:
         tgtband = 'NBUI'
         # thd=-0.680
         ftidx = bandnames.index(tgtband)
@@ -40,11 +40,11 @@ def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
         for i in np.arange(pnum):
             cc = clsarr[i]
             val = ftvals[i]
-            if (cc > 0 and val > thd):
+            if cc > 0 and val > thd:
                 clsarr[i] = 3
-            elif (cc > 0 and val < thd):
+            elif cc > 0 and val < thd:
                 clsarr[i] = 1
-    elif (app == 4):
+    elif app == 4:
         tgtband = 'VAUI'
         # thd=-0.680
         ftidx = bandnames.index(tgtband)
@@ -52,11 +52,11 @@ def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
         for i in np.arange(pnum):
             cc = clsarr[i]
             val = ftvals[i]
-            if (cc > 0 and val > thd):
+            if cc > 0 and val > thd:
                 clsarr[i] = 3
-            elif (cc > 0 and val < thd):
+            elif cc > 0 and val < thd:
                 clsarr[i] = 1
-    elif (app == 5):
+    elif app == 5:
         tgtband = 'MVAUI'
         # thd=-0.680
         ftidx = bandnames.index(tgtband)
@@ -64,9 +64,9 @@ def urbclassify(pnum, bandnames, oneimg, clsarr, app, thd):
         for i in np.arange(pnum):
             cc = clsarr[i]
             val = ftvals[i]
-            if (cc > 0 and val > thd):
+            if cc > 0 and val > thd:
                 clsarr[i] = 3
-            elif (cc > 0 and val < thd):
+            elif cc > 0 and val < thd:
                 clsarr[i] = 1
     return tgtband
 
@@ -233,13 +233,13 @@ def hist_distribution(tgtband, bandnames, oneimg, clsarr, numcls, num_bins):
 
     for i in np.arange(num_bins):
         bounds[i, 0] = xlmin + i * binsize
-        if (i != num_bins - 1):
+        if i != num_bins - 1:
             bounds[i, 1] = xlmin + (i + 1) * binsize
         else:
             bounds[i, 1] = xrmax
 
     for i in np.arange(num_bins):
-        if (i != num_bins - 1):
+        if i != num_bins - 1:
             fbidx = np.where(np.logical_and(ftvals >= bounds[i, 0], ftvals < bounds[i, 1]))[0]
         else:
             fbidx = np.where(np.logical_and(ftvals >= bounds[i, 0], ftvals <= bounds[i, 1]))[0]
@@ -259,13 +259,13 @@ def classify_by_mixture(mixtures, setname):
     if setname == '5classes':
         for i in np.arange(irows):
             vec = mixtures[i, :]
-            if (vec[0] > 0.5):
+            if vec[0] > 0.5:
                 newcls[i] = 0
-            elif (vec[1] > 0.7):
+            elif vec[1] > 0.7:
                 newcls[i] = 1
-            elif (vec[2] > 0.7):
+            elif vec[2] > 0.7:
                 newcls[i] = 2
-            elif (vec[4] > 0.7):
+            elif vec[4] > 0.7:
                 newcls[i] = 4
             else:
                 newcls[i] = 3
@@ -273,11 +273,11 @@ def classify_by_mixture(mixtures, setname):
     elif setname == 'geomedian':
         for i in np.arange(irows):
             vec = mixtures[i, :]
-            if (vec[0] > 0.7):
+            if vec[0] > 0.7:
                 newcls[i] = 1
-            elif (vec[1] > 0.7):
+            elif vec[1] > 0.7:
                 newcls[i] = 2
-            elif (vec[3] > 0.7):
+            elif vec[3] > 0.7:
                 newcls[i] = 4
             else:
                 newcls[i] = 3
