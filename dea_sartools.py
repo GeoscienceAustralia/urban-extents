@@ -56,7 +56,7 @@ class sarcube(datacube.Datacube):
                 data[band] = data[band].where(data[band] > 0, dilated)
 
         if remove_high:
-            if verobse: print("Removing high outliers with an erosion...")
+            if verbose: print("Removing high outliers with an erosion...")
             # reduce extreme outliers
             for band in bands:
                 eroded = data[band].groupby('time').apply(grey_erosion, size=(3, 3))
