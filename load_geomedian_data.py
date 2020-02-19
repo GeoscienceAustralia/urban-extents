@@ -6,14 +6,14 @@ import sys
 import numpy as np
 import time
 import os
-from spectral import *
-
-
+from spectral import envi
+import rasterio
+from dea_sartools import sarcube
 
 argc = len(sys.argv)
 print(argc)
 
-if (argc != 8):
+if argc != 8:
     print('Usage: python3 load_geomedian_data.py lat_top lat_bottom lon_left lon_right sensor year output_dir')
     sys.exit()
 
@@ -49,8 +49,6 @@ newquery = {'x': (lon_left, lon_right),
 
 dc = datacube.Datacube(app="geomedian")
 data = dc.load(product=sensor + '_nbart_geomedian_annual', **newquery)
-
-import rasterio
 
 
 def write_single_band_dataarray(timebandnaes, filename, dataarray, **profile_override):
@@ -105,37 +103,37 @@ def cal_indices(indstr, datastack):
     swir1 = datastack[4]
     swir2 = datastack[5]
 
-    if (indstr == 'TSC_BRI'):  # Taseeled Cap Brightness
+    if indstr == 'TSC_BRI':  # Taseeled Cap Brightness
         indval = 0.3037 * blue + 0.2793 * green + 0.4743 * red + 0.5585 * nir + 0.5082 * swir1 + 0.1863 * swir2
-    elif (indstr == 'MSAVI'):  # Modified Soil Adjusted Vegetation Index
+    elif indstr == 'MSAVI':  # Modified Soil Adjusted Vegetation Index
         indval = (2 * nir + 1 - np.sqrt((2 * nir + 1) * (2 * nir + 1) - 8 * (nir - red))) / 2
-    elif (indstr == 'MNDWI'):  # Modified Normalised Difference Water Index
+    elif indstr == 'MNDWI':  # Modified Normalised Difference Water Index
         indval = (green - swir1) / (green + swir1)
-    elif (indstr == 'NDBI'):  # Normalised difference built-up index
+    elif indstr == 'NDBI':  # Normalised difference built-up index
         indval = (swir1 - nir) / (swir1 + swir2)
-    elif (indstr == "SAVI"):  # Soil adjusted vegetation index
+    elif indstr == "SAVI":  # Soil adjusted vegetation index
         L = np.float32(0.5)
         indval = ((nir - red) / (nir + red + L)) * (1 + L)
-    elif (indstr == 'NDTI'):  # Normalised difference tillage index
+    elif indstr == 'NDTI':  # Normalised difference tillage index
         indval = (swir1 - swir2) / (swir1 + swir2)
-    elif (indstr == 'NDWI'):  # Normalised difference water index
+    elif indstr == 'NDWI':  # Normalised difference water index
         indval = (green - nir) / (green + nir)
-    elif (indstr == 'MVAUI'):  # MNDWI and Vegetation adjusted urban index
+    elif indstr == 'MVAUI':  # MNDWI and Vegetation adjusted urban index
         msavi = (2 * nir + 1 - np.sqrt((2 * nir + 1) * (2 * nir + 1) - 8 * (nir - red))) / 2
         mndwi = (green - swir1) / (green + swir1)
         indval = (red - swir1) / (red + swir1) + (swir2 - swir1) / (swir2 + swir1) - msavi + mndwi
-    elif (indstr == 'WVAUI'):  # NDWI and Vegetation adjusted urban index
+    elif indstr == 'WVAUI':  # NDWI and Vegetation adjusted urban index
         msavi = (2 * nir + 1 - np.sqrt((2 * nir + 1) * (2 * nir + 1) - 8 * (nir - red))) / 2
         ndwi = (green - nir) / (green + nir)
         indval = (red - swir1) / (red + swir1) + (swir2 - swir1) / (swir2 + swir1) - msavi + ndwi
-    elif (indstr == 'DBSI'):  # NDWI and Vegetation adjusted urban index
+    elif indstr == 'DBSI':  # NDWI and Vegetation adjusted urban index
         msavi = (2 * nir + 1 - np.sqrt((2 * nir + 1) * (2 * nir + 1) - 8 * (nir - red))) / 2
         indval = (swir1 - green) / (swir1 + green) - msavi
-    elif (indstr == 'BSI'):  # Building urban index
+    elif indstr == 'BSI':  # Building urban index
         indval = ((swir1 + red) - (nir + blue)) / ((swir1 + red) + (nir + blue))
-    elif (indstr == 'NDVI'):  # Normalised difference vegetation index
+    elif indstr == 'NDVI':  # Normalised difference vegetation index
         indval = (nir - red) / (nir + red)
-    elif (indstr == 'BUI'):  # Built-up index
+    elif indstr == 'BUI':  # Built-up index
         ndbi = (swir1 - nir) / (swir1 + swir2)
         ndvi = (nir - red) / (nir + red)
         indval = ndbi - ndvi
@@ -165,8 +163,7 @@ for indstr in indiceslist:
     indval = cal_indices(indstr, meanstack)
     write_image_envi(path, indstr, indval, h)
 
-from dea_sartools import sarcube
-
+# Load SAR data
 dc_sar = sarcube(app="Sentinel_1", config='radar.conf')
 sarbands = ['vv', 'vh', 'lia']
 
