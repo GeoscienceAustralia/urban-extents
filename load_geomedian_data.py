@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[76]:
-
-
 
 # Import modules
 import datacube
@@ -12,16 +7,6 @@ import numpy as np
 import time
 import os
 from spectral import *
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
 
 argc = len(sys.argv)
 print(argc)
@@ -40,10 +25,6 @@ lon_right = float(param[4])
 sensor = param[5] 
 year = param[6] 
 dirc = param[7]
-
-
-# In[77]:
-
 
 #lat_top=-35.11
 #lat_bottom=-35.35
@@ -64,17 +45,8 @@ newquery={'x': (lon_left, lon_right),
           'output_crs': 'EPSG:3577',
            'resolution': (-25, 25)} 
 
-
-# In[78]:
-
-
-
 dc = datacube.Datacube(app="geomedian")
 data = dc.load(product=sensor + '_nbart_geomedian_annual', **newquery)
-
-
-# In[79]:
-
 
 import rasterio
 def write_single_band_dataarray(timebandnaes, filename, dataarray, **profile_override):
@@ -91,10 +63,6 @@ def write_single_band_dataarray(timebandnaes, filename, dataarray, **profile_ove
     dest.write(dataarray.data[0], 1)
     dest.close()
 
-
-# In[80]:
-
-
 allbands=['blue', 'green', 'red', 'nir', 'swir1', 'swir2']
 output_bandnames = ['blue','green', 'red', 'nir', 'swir1', 'swir2']
 
@@ -108,12 +76,9 @@ yearstr=np.asarray(yearstr)
 meanstack=[]
 scale=np.float32(10000.0)
 
-
 data
 
 for cc, bandname in enumerate(allbands):
-
-    
     banddata=data[bandname]
     outbandname=output_bandnames[cc]
     filename=path+'/NBAR_'+outbandname+'.img'
@@ -126,18 +91,13 @@ for cc, bandname in enumerate(allbands):
     dev=dev[0]
     meanstack.append(dev)
 
-
-# In[81]:
-
-
 def cal_indices(indstr, datastack):
     blue=datastack[0]
     green=datastack[1]
     red=datastack[2]
     nir=datastack[3]
     swir1=datastack[4]
-    swir2=datastack[5]              
-                   
+    swir2=datastack[5]
 
     if (indstr=='TSC_BRI'): #Taseeled Cap Brightness
         indval = 0.3037*blue + 0.2793*green + 0.4743*red + 0.5585*nir + 0.5082*swir1 + 0.1863*swir2
@@ -173,21 +133,12 @@ def cal_indices(indstr, datastack):
         ndbi = (swir1-nir)/(swir1+swir2)
         ndvi = (nir-red)/(nir+red)
         indval = ndbi - ndvi
-
     else:
         indval=(blue+green+red+nir+swir1+swir2)/6
 
-        
     return indval
-        
-
-
-# In[82]:
-
 
 def write_image_envi(path, bandname, dev, h):
-    
-           
     hdrfile=path+'/'+bandname+'.hdr'
     imgfile=path+'/'+bandname+'.img'
     h['bands']=1
@@ -196,62 +147,27 @@ def write_image_envi(path, bandname, dev, h):
 
     envi.write_envi_header(hdrfile, h)
     dev.tofile(imgfile)
- 
-
-
-# In[83]:
-
 
 h['data type']=4
 
-
-# In[84]:
-
-
 indiceslist=['TSC_BRI', 'MSAVI', 'MNDWI', 'NDVI', 'NDTI', 'DBSI', 'BUI', 'SAVI', 
               'VAUI', 'NDWI','MVAUI', 'WVAUI', 'BSI']
-
-
-# In[85]:
-
 
 for indstr in indiceslist:
     indval = cal_indices(indstr, meanstack)
     write_image_envi(path, indstr, indval, h)
 
-
-# In[86]:
-
-
 from dea_sartools import sarcube
-
-
-# In[87]:
-
-
 
 dc_sar = sarcube(app="Sentinel_1",  config='radar.conf')
 sarbands=['vv', 'vh', 'lia']
 
 data = dc_sar.load(product='s1_gamma0_scene', group_by='solar_day', db=False, **newquery)
 
-
-
-
-
-# In[88]:
-
-
 vv=data['vv'].data
 vh=data['vh'].data
 
-
-# In[95]:
-
-
 def write_bandstats_envi(path, bandname, sp, dev, h):
-    
-    
     if sp==1:
         mks=np.nanmean(dev, axis=0)
     elif sp==2:
@@ -269,19 +185,9 @@ def write_bandstats_envi(path, bandname, sp, dev, h):
     mks.tofile(imgfile)
     return mks
 
-
-# In[96]:
-
-
 vvbnames=['vv_mean','vv_std', 'vv_range']
 vhbnames=['vh_mean','vh_std', 'vh_range']
+
 for sp in np.arange(3):
     aa=write_bandstats_envi(path, vvbnames[sp], sp+1, vv, h)
     aa=write_bandstats_envi(path, vhbnames[sp], sp+1, vh, h)
-
-
-# In[ ]:
-
-
-
-
