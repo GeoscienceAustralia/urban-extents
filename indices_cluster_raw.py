@@ -10,72 +10,47 @@ import pandas as pd
 import numpy as np
 from sklearn import preprocessing
 from sklearn.cluster import KMeans
-
+from spectral import *
+import urban_module as ubm
 
 
 # directory where the input indices data can be found
 path=sys.argv[1]
 
-# directory where the header file for the clusters image can be found
-sourcehdr=sys.argv[2]
+# file name of the brightness index for the clusters image 
+brightnessfile=sys.argv[2]
+
+# file name of the greenness index for the clusters image 
+greennessfile=sys.argv[3]
+
+# file name of the wetness index for the clusters image 
+wetnessfile=sys.argv[4]
 
 # the number of clusters to generate 
-numcls=int(sys.argv[3])
+numcls=int(sys.argv[5])
 
 
-# file name of the Tasseled cap brightness data
-bridatafile=path+'/phg_bri.img'
-
-# file name of the modified soil adjusted vegetation index data
-msavidatafile=path+'/phg_msavi.img'
+filelist=[brightnessfile, greennessfile, wetnessfile]
 
 
-# file name of the modified normalised difference waterindex data
-mndwidatafile=path+'/phg_mndwi.img'
+hdrfile=path+'/'+brightnessfile+'.hdr'
+h=envi.read_envi_header(hdrfile)
 
-# file name of a csv file which stores the spatial dimensions (number of rows, number of columns) of the data  
-parafile=path+'/ts_irow_icol.csv'
-
-filelist=[bridatafile, msavidatafile, mndwidatafile]
-
-
-
-
-
-
-tmm = pd.read_csv(parafile, header =None)
-
-nrow=tmm.values[1:3][0][0]
-ncol=tmm.values[1:3][1][0]
-print (nrow, ncol)
+nrow=np.int32(h['lines'])
+ncol=np.int32(h['samples'])
 pnum = nrow*ncol
 
-data=np.zeros([pnum, 5])
-
-rowdiv=20
-coldiv=16
-
-rlen=8
-clen=8
+data=np.zeros([pnum, 3], dtype=np.float32)
 
 
 
 # a function to read indices data file, extract the relevant band in the file
 # put the data in the columns of an array as inputs for the clustering algorithm 
 
-def readimgfile(filename, pnum, tgt, data, col):
-    imgdata=np.fromfile(filename, dtype=np.float32)
-    oneblock=imgdata[tgt*pnum:(tgt+1)*pnum]
-    data[:, col]=imgdata[tgt*pnum:(tgt+1)*pnum]
-    
-
-
-
-
-tgt=4
 col=0
 for filename in filelist:
-    readimgfile(filename, pnum, tgt, data, col)
+    h, oneimage, pnum = ubm.load_envi_data_float(path, filename)
+    data[:, col]= oneimage
     col=col+1
 
 
@@ -88,12 +63,14 @@ def classifyoneblock_spectral(data, nrow, ncol, rp, numcls):
     greenness = data[:, 1]
     brightness = data[:, 0]
     wetness = data[:, 2]
+
+    waterthd=0.08
    
 
     #exclude water pixels from input data
 
-    wateridx=np.where(wetness>=0.02)[0]
-    nonwateridx=np.where(wetness<0.02)[0]
+    wateridx=np.where(wetness>=waterthd)[0]
+    nonwateridx=np.where(wetness<waterthd)[0]
     stidx = np.argsort(greenness)
     
     
@@ -217,26 +194,23 @@ for i in range(1, numcls):
         mapcls[i]=3
       
           
-imgfile = path+'/urban_spec_5c_raw.img'
-clsimg.tofile(imgfile)
-
-hdrfile = path+'/urban_spec_5c_raw.hdr'
-
-commstr='cp '+sourcehdr+' '+hdrfile
-os.system(commstr)
-
+fstem='urban_spec_5c_raw'
+bandnames=['land cover class raw']
+bands=1
+datatype=1
+description='Land cover classification raw'
+ubm.outputenvifile(clsimg, path, h, fstem, bandnames, bands, datatype, description)
 
 
 bbclsimg=mapcls[clsimg]
-imgfile = path+'/urban_spec_5c.img'
-bbclsimg.tofile(imgfile)
+
+fstem = 'urban_spec_5c'
+bandnames=['land cover class']
+bands=1
+datatype=1
+description='Land cover classification'
+ubm.outputenvifile(bbclsimg, path, h, fstem, bandnames, bands, datatype, description)
 
 
-
-hdrfile = path+'/urban_spec_5c.hdr'
-
-commstr='cp '+sourcehdr+' '+hdrfile
-
-os.system(commstr)
 
 
