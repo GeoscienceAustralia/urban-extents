@@ -79,7 +79,6 @@ yearstr = np.asarray(yearstr)
 meanstack = []
 scale = np.float32(10000.0)
 
-data
 
 for cc, bandname in enumerate(allbands):
     banddata = data[bandname]
@@ -89,9 +88,11 @@ for cc, bandname in enumerate(allbands):
     write_single_band_dataarray(yearstr, filename, banddata, driver='ENVI')
     h = envi.read_envi_header(hdrfilename)
     h['band names'] = '{' + bandname + ' band year ' + year + '}'
+    h['data type'] = 4
     envi.write_envi_header(hdrfilename, h)
     dev = banddata.data / scale
     dev = dev[0]
+    dev.tofile(filename)
     meanstack.append(dev)
 
 
@@ -198,3 +199,4 @@ vhbnames = ['vh_mean', 'vh_std', 'vh_range']
 for sp in np.arange(3):
     aa = write_bandstats_envi(path, vvbnames[sp], sp + 1, vv, h)
     aa = write_bandstats_envi(path, vhbnames[sp], sp + 1, vh, h)
+
