@@ -153,7 +153,7 @@ path=param[2]
 setname=param[3]
 outfilename=param[4]
 
-hdrfile=path+'/BLUE_geomedian.hdr'
+hdrfile=path+'/NBAR_blue.hdr'
 h=envi.read_envi_header(hdrfile)
 
 
@@ -164,18 +164,16 @@ pnum = irow*icol
 
 
 
-bandnames=['BLUE','GREEN', 'RED', 'NIR', 'SWIR1', 'SWIR2']
+bandnames=['NBAR_blue','NBAR_green', 'NBAR_red', 'NBAR_nir', 'NBAR_swir1', 'NBAR_swir2']
 numbands=len(bandnames)
 allpixels=np.zeros((pnum, numbands), dtype=np.float32)
 
 
-j=0
-for tgtband in bandnames:
-    filename=tgtband+'_geomedian'
+for j, tgtband in enumerate(bandnames):
+    filename=tgtband
     h, oneband, pnum = ubm.load_envi_data_float(path, filename)
     oneband=oneband[0]
     allpixels[:, j]=oneband
-    j=j+1
 
 
 oneimage=allpixels.transpose()
@@ -207,14 +205,24 @@ mixtures=model.predict(allpixels)
 
 
 
-newcls=ubm.classify_by_mixture(mixtures, 'geomedian')
+newcls=ubm.classify_by_mixture(mixtures, 'geomedian_v2')
 
 waterpixels = np.where(mvaui>0.05)[0]
 newcls[waterpixels]=0
 
+#newcls.astype(np.uint8)
+
+#print(newcls)
+
 outfilename=outfilename+'_urban_map'
 ubm.outputclsfile(newcls, path, h, outfilename, 4)
 
+outfilename=outfilename+'_mixture'
+mixtures=mixtures.transpose()
+
+bandnames='{veg, bare, sub, bld}'
+description='fraction of ground objects'
+ubm.outputenvifile(mixtures, path, h, outfilename, bandnames, 4, 4, description)
 
 
 #outimage=mixtures.transpose()
