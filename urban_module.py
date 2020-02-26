@@ -282,6 +282,18 @@ def classify_by_mixture(mixtures, setname):
             else:
                 newcls[i] = 3
 
+    elif setname == 'geomedian_v2':
+        for i in np.arange(irows):
+            vec = mixtures[i, :]
+            if vec[0] > 0.6:
+                newcls[i] = 1
+            elif vec[1] > 0.6:
+                newcls[i] = 2
+            elif vec[3] > 0.5:
+                newcls[i] = 4
+            else:
+                newcls[i] = 3
+
     elif setname == 'mixture_model_sm':
         for i in np.arange(irows):
             vec = mixtures[i, :]
