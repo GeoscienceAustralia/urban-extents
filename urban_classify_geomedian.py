@@ -228,24 +228,24 @@ fx=np.where(np.logical_and(newcls==3.0, dbsi+ndti>0.40))[0]
 
 newcls[fx]=6
 
-outfilename=outfilename+'_urban_map_raw'
-ubm.outputclsfile(newcls, path, h, outfilename, 4)
+filename=outfilename+'_urban_map_raw'
+ubm.outputclsfile(newcls, path, h, filename, 4)
 
 #remove false suburban classification
 newcls[newcls==5]=1
 newcls[newcls==6]=1
 
 
-outfilename=outfilename+'_urban_map'
-ubm.outputclsfile(newcls, path, h, outfilename, 4)
+filename=outfilename+'_urban_map'
+ubm.outputclsfile(newcls, path, h, filename, 4)
 
 
-outfilename=outfilename+'_mixture'
+filename=outfilename+'_mixture'
 mixtures=mixtures.transpose()
 
 bandnames='{veg, bare, sub, bld}'
 description='fraction of ground objects'
-ubm.outputenvifile(mixtures, path, h, outfilename, bandnames, 4, 4, description)
+ubm.outputenvifile(mixtures, path, h, filename, bandnames, 4, 4, description)
 
 
 #outimage=mixtures.transpose()
