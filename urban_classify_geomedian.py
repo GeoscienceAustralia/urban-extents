@@ -136,12 +136,15 @@ def cal_mvaui(blue, green, red, nir, swir1, swir2):
 
     return mvaui
 
+def cal_dbsi(blue, green, red, nir, swir1, swir2):
+    msavi = (2 * nir + 1 - np.sqrt((2 * nir + 1) * (2 * nir + 1) - 8 * (nir - red))) / 2
+    dbsi = (swir1 - green) / (swir1 + green) - msavi	
+    return dbsi
 
-	
-
-
-
-
+    
+def cal_ndti(blue, green, red, nir, swir1, swir2):
+    ndti = (swir1 - swir2) / (swir1 + swir2)
+    return ndti
     
 param=sys.argv
 
@@ -187,6 +190,10 @@ swir2=oneimage[5, :]
 
 print("Start calculating MVAUI")
 mvaui=cal_mvaui(blue, green, red, nir, swir1, swir2)
+print("Start calculating DBSI")
+dbsi=cal_dbsi(blue, green, red, nir, swir1, swir2)
+print("Start calculating NDTI")
+ndti=cal_ndti(blue, green, red, nir, swir1, swir2)
 
 
 
@@ -212,10 +219,26 @@ newcls[waterpixels]=0
 
 #newcls.astype(np.uint8)
 
-#print(newcls)
+#identify false suburban classification 
+fx=np.where(np.logical_and(newcls==3.0, dbsi>0.28))[0]
+
+newcls[fx]=5
+
+fx=np.where(np.logical_and(newcls==3.0, dbsi+ndti>0.40))[0]
+
+newcls[fx]=6
+
+outfilename=outfilename+'_urban_map_raw'
+ubm.outputclsfile(newcls, path, h, outfilename, 4)
+
+#remove false suburban classification
+newcls[newcls==5]=1
+newcls[newcls==6]=1
+
 
 outfilename=outfilename+'_urban_map'
 ubm.outputclsfile(newcls, path, h, outfilename, 4)
+
 
 outfilename=outfilename+'_mixture'
 mixtures=mixtures.transpose()
