@@ -13,8 +13,10 @@ from dea_sartools import sarcube
 argc = len(sys.argv)
 print(argc)
 
-if argc != 8:
-    print('Usage: python3 load_geomedian_data.py lat_top lat_bottom lon_left lon_right sensor year output_dir')
+if argc != 9:
+    print(
+        'Usage: python3 load_geomedian_data.py lat_top lat_bottom lon_left lon_right sensor year output_dir '
+        'load_sar_data_or_not')
     sys.exit()
 
 # Set up spatial and temporal query; note that 'output_crs' and 'resolution' need to be set
@@ -27,14 +29,7 @@ lon_right = float(param[4])
 sensor = param[5]
 year = param[6]
 dirc = param[7]
-
-# lat_top=-35.11
-# lat_bottom=-35.35
-# lon_left=149.02
-# lon_right=149.22
-# sensor='ls8'
-# year='2017'
-# dirc='/g/data1a/u46/pjt554/urban_geomedian_data/canberra'
+sar = param[8]
 
 comm = 'mkdir ' + dirc
 os.system(comm)
@@ -49,6 +44,7 @@ newquery = {'x': (lon_left, lon_right),
 
 dc = datacube.Datacube(app="geomedian")
 data = dc.load(product=sensor + '_nbart_geomedian_annual', **newquery)
+sdevdata = dc.load(product=sensor + '_nbart_tmad_annual', **newquery)
 
 
 def write_single_band_dataarray(timebandnaes, filename, dataarray, **profile_override):
@@ -66,8 +62,8 @@ def write_single_band_dataarray(timebandnaes, filename, dataarray, **profile_ove
     dest.close()
 
 
-allbands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']
-output_bandnames = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']
+allbands = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'sdev']
+output_bandnames = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'sdev']
 
 path = dirc + '/' + year
 comm = 'mkdir ' + path
@@ -79,9 +75,11 @@ yearstr = np.asarray(yearstr)
 meanstack = []
 scale = np.float32(10000.0)
 
-
 for cc, bandname in enumerate(allbands):
-    banddata = data[bandname]
+    if (bandname != 'sdev'):
+        banddata = data[bandname]
+    else:
+        banddata = sdevdata[bandname]
     outbandname = output_bandnames[cc]
     filename = path + '/NBAR_' + outbandname + '.img'
     hdrfilename = path + '/NBAR_' + outbandname + '.hdr'
@@ -90,10 +88,13 @@ for cc, bandname in enumerate(allbands):
     h['band names'] = '{' + bandname + ' band year ' + year + '}'
     h['data type'] = 4
     envi.write_envi_header(hdrfilename, h)
-    dev = banddata.data / scale
+    dev = banddata.data
     dev = dev[0]
+    if (bandname != 'sdev'):
+        dev = dev / scale
+        meanstack.append(dev)
+
     dev.tofile(filename)
-    meanstack.append(dev)
 
 
 def cal_indices(indstr, datastack):
@@ -164,16 +165,8 @@ for indstr in indiceslist:
     indval = cal_indices(indstr, meanstack)
     write_image_envi(path, indstr, indval, h)
 
+
 # Load SAR data
-dc_sar = sarcube(app="Sentinel_1", config='radar.conf')
-sarbands = ['vv', 'vh', 'lia']
-
-data = dc_sar.load(product='s1_gamma0_scene', group_by='solar_day', db=False, **newquery)
-
-vv = data['vv'].data
-vh = data['vh'].data
-
-
 def write_bandstats_envi(path, bandname, sp, dev, h):
     if sp == 1:
         mks = np.nanmean(dev, axis=0)
@@ -193,10 +186,18 @@ def write_bandstats_envi(path, bandname, sp, dev, h):
     return mks
 
 
-vvbnames = ['vv_mean', 'vv_std', 'vv_range']
-vhbnames = ['vh_mean', 'vh_std', 'vh_range']
+if (sar == '1'):
+    dc_sar = sarcube(app="Sentinel_1", config='radar.conf')
+    sarbands = ['vv', 'vh', 'lia']
 
-for sp in np.arange(3):
-    aa = write_bandstats_envi(path, vvbnames[sp], sp + 1, vv, h)
-    aa = write_bandstats_envi(path, vhbnames[sp], sp + 1, vh, h)
+    data = dc_sar.load(product='s1_gamma0_scene', group_by='solar_day', db=False, **newquery)
 
+    vv = data['vv'].data
+    vh = data['vh'].data
+
+    vvbnames = ['vv_mean', 'vv_std', 'vv_range']
+    vhbnames = ['vh_mean', 'vh_std', 'vh_range']
+
+    for sp in np.arange(3):
+        aa = write_bandstats_envi(path, vvbnames[sp], sp + 1, vv, h)
+        aa = write_bandstats_envi(path, vhbnames[sp], sp + 1, vh, h)
